@@ -36,13 +36,13 @@ public class CacheService {
         return value instanceof MarketTickDto tick ? Optional.of(tick) : Optional.empty();
     }
 
-    public void cacheOptionChain(String instrument, List<OptionSnapshotDto> options) {
-        set(optionChainKey(instrument), options, OPTION_CHAIN_TTL);
+    public void cacheOptionChain(String stockName, List<OptionSnapshotDto> options) {
+        set(optionChainKey(stockName), options, OPTION_CHAIN_TTL);
     }
 
     @SuppressWarnings("unchecked")
-    public Optional<List<OptionSnapshotDto>> getOptionChain(String instrument) {
-        Object value = get(optionChainKey(instrument));
+    public Optional<List<OptionSnapshotDto>> getOptionChain(String stockName) {
+        Object value = get(optionChainKey(stockName));
         return value instanceof List<?> list ? Optional.of((List<OptionSnapshotDto>) list) : Optional.empty();
     }
 
@@ -73,7 +73,7 @@ public class CacheService {
         return "market:tick:token:" + token;
     }
 
-    private String optionChainKey(String instrument) {
-        return "market:option-chain:" + instrument;
+    private String optionChainKey(String stockName) {
+        return "market:option-chain:" + stockName;
     }
 }

@@ -2,7 +2,6 @@ package com.example.demo.service;
 
 import com.example.demo.config.AngelOneProperties;
 import com.example.demo.domain.AuthSessionEntity;
-import com.example.demo.domain.InstrumentType;
 import com.example.demo.domain.OptionSnapshotEntity;
 import com.example.demo.domain.OptionType;
 import com.example.demo.dto.OptionChainResponse;
@@ -50,10 +49,11 @@ public class OptionChainService {
     }
 
     @Transactional
-    public OptionChainResponse fetchAndStore(InstrumentType instrument) {
+    public OptionChainResponse fetchAndStore(String stockName, String requestedExpiry) {
+        String normalizedStockName = normalize(stockName);
         AuthSessionEntity session = authService.requireSession();
-        String expiry = configuredExpiry(instrument);
-        JsonNode response = smartApiClient.optionGreek(session.getJwtToken(), instrument.name(), expiry);
+        String expiry = resolveExpiry(normalizedStockName, requestedExpiry);
+        JsonNode response = smartApiClient.optionGreek(session.getJwtToken(), normalizedStockName, expiry);
         JsonNode data = response.path("data");
         if (!data.isArray()) {
             throw new SmartApiException("SmartAPI option chain response did not include a data array");
@@ -63,31 +63,32 @@ public class OptionChainService {
         LocalDate expiryDate = parseExpiry(expiry);
         List<OptionSnapshotDto> snapshots = new ArrayList<>();
         for (JsonNode item : data) {
-            OptionSnapshotEntity entity = toEntity(instrument, item, expiryDate, now);
+            OptionSnapshotEntity entity = toEntity(normalizedStockName, item, expiryDate, now);
             if (entity != null) {
                 snapshots.add(mapperService.toDto(optionSnapshotRepository.save(entity)));
             }
         }
-        cacheService.cacheOptionChain(instrument.name(), snapshots);
-        return new OptionChainResponse(instrument, now, snapshots);
+        cacheService.cacheOptionChain(normalizedStockName, snapshots);
+        return new OptionChainResponse(normalizedStockName, now, snapshots);
     }
 
     @Transactional(readOnly = true)
-    public OptionChainResponse latest(InstrumentType instrument) {
-        List<OptionSnapshotDto> cached = cacheService.getOptionChain(instrument.name()).orElse(null);
+    public OptionChainResponse latest(String stockName) {
+        String normalizedStockName = normalize(stockName);
+        List<OptionSnapshotDto> cached = cacheService.getOptionChain(normalizedStockName).orElse(null);
         if (cached != null && !cached.isEmpty()) {
-            return new OptionChainResponse(instrument, cached.get(0).snapshotTime(), cached);
+            return new OptionChainResponse(normalizedStockName, cached.get(0).snapshotTime(), cached);
         }
         Instant since = Instant.now().minusSeconds(300);
         List<OptionSnapshotDto> snapshots = optionSnapshotRepository
-                .findByInstrumentAndSnapshotTimeAfterOrderByStrikeAscOptionTypeAsc(instrument, since)
+                .findByStockNameAndSnapshotTimeAfterOrderByStrikeAscOptionTypeAsc(normalizedStockName, since)
                 .stream()
                 .map(mapperService::toDto)
                 .toList();
-        return new OptionChainResponse(instrument, Instant.now(), snapshots);
+        return new OptionChainResponse(normalizedStockName, Instant.now(), snapshots);
     }
 
-    private OptionSnapshotEntity toEntity(InstrumentType instrument, JsonNode item, LocalDate expiry, Instant now) {
+    private OptionSnapshotEntity toEntity(String stockName, JsonNode item, LocalDate expiry, Instant now) {
         OptionType optionType = optionType(item);
         BigDecimal strike = decimal(item, "strikePrice", "strike", "strike_price");
         if (optionType == null || strike == null) {
@@ -95,7 +96,7 @@ public class OptionChainService {
         }
 
         OptionSnapshotEntity entity = new OptionSnapshotEntity();
-        entity.setInstrument(instrument);
+        entity.setStockName(stockName);
         entity.setSymbol(text(item, "tradingSymbol", "tradingsymbol", "symbol", "name"));
         entity.setToken(text(item, "symbolToken", "symboltoken", "token"));
         entity.setStrike(strike);
@@ -109,7 +110,7 @@ public class OptionChainService {
         entity.setPriceChange(decimal(item, "netChange", "priceChange", "change"));
         entity.setSnapshotTime(now);
         if (entity.getSymbol() == null || entity.getSymbol().isBlank()) {
-            entity.setSymbol(instrument.name() + expiry + strike + optionType.name());
+            entity.setSymbol(stockName + expiry + strike + optionType.name());
         }
         if (entity.getToken() == null || entity.getToken().isBlank()) {
             entity.setToken(entity.getSymbol());
@@ -117,14 +118,26 @@ public class OptionChainService {
         return entity;
     }
 
-    private String configuredExpiry(InstrumentType instrument) {
-        String expiry = instrument == InstrumentType.NIFTY
-                ? properties.optionChain().niftyExpiry()
-                : properties.optionChain().bankniftyExpiry();
+    private String resolveExpiry(String stockName, String requestedExpiry) {
+        String expiry = requestedExpiry;
         if (expiry == null || expiry.isBlank()) {
-            throw new SmartApiException("Configure " + instrument + " expiry using NIFTY_EXPIRY or BANKNIFTY_EXPIRY, for example 27JUN2026");
+            expiry = switch (stockName) {
+                case "NIFTY" -> properties.optionChain().niftyExpiry();
+                case "BANKNIFTY" -> properties.optionChain().bankniftyExpiry();
+                default -> null;
+            };
+        }
+        if (expiry == null || expiry.isBlank()) {
+            throw new SmartApiException("Provide expiry for " + stockName + " using ?expiry=27JUN2026 or configure NIFTY_EXPIRY/BANKNIFTY_EXPIRY");
         }
         return expiry.toUpperCase(Locale.ENGLISH);
+    }
+
+    private String normalize(String value) {
+        if (value == null || value.isBlank()) {
+            throw new SmartApiException("Stock name is required");
+        }
+        return value.trim().toUpperCase(Locale.ENGLISH);
     }
 
     private LocalDate parseExpiry(String expiry) {

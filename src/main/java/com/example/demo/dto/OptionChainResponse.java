@@ -1,11 +1,10 @@
 package com.example.demo.dto;
 
-import com.example.demo.domain.InstrumentType;
 import java.time.Instant;
 import java.util.List;
 
 public record OptionChainResponse(
-        InstrumentType instrument,
+        String stockName,
         Instant generatedAt,
         List<OptionSnapshotDto> options
 ) {

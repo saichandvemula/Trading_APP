@@ -1,6 +1,5 @@
 package com.example.demo.service;
 
-import com.example.demo.domain.InstrumentType;
 import com.example.demo.domain.MarketTickEntity;
 import com.example.demo.dto.MarketTickDto;
 import com.example.demo.repository.MarketTickRepository;
@@ -24,7 +23,6 @@ public class MarketDataService {
 
     @Transactional
     public MarketTickDto saveTick(
-            InstrumentType instrument,
             String symbol,
             String token,
             BigDecimal lastTradedPrice,
@@ -32,9 +30,10 @@ public class MarketDataService {
             Long openInterest,
             Instant tickTime
     ) {
+        String normalizedSymbol = normalize(symbol);
         MarketTickEntity entity = new MarketTickEntity();
-        entity.setInstrument(instrument);
-        entity.setSymbol(symbol);
+        entity.setStockName(normalizedSymbol);
+        entity.setSymbol(normalizedSymbol);
         entity.setToken(token);
         entity.setLastTradedPrice(lastTradedPrice);
         entity.setVolume(volume);
@@ -43,5 +42,9 @@ public class MarketDataService {
         MarketTickDto dto = mapperService.toDto(marketTickRepository.save(entity));
         cacheService.cacheTick(dto);
         return dto;
+    }
+
+    private String normalize(String value) {
+        return value == null ? null : value.trim().toUpperCase();
     }
 }

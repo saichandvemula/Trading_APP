@@ -1,13 +1,12 @@
 package com.example.demo.dto;
 
-import com.example.demo.domain.InstrumentType;
 import com.example.demo.domain.OptionType;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
 public record OptionSnapshotDto(
-        InstrumentType instrument,
+        String stockName,
         String symbol,
         String token,
         BigDecimal strike,

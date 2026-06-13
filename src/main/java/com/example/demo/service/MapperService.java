@@ -13,7 +13,7 @@ public class MapperService {
 
     public MarketTickDto toDto(MarketTickEntity entity) {
         return new MarketTickDto(
-                entity.getInstrument(),
+                entity.getStockName(),
                 entity.getSymbol(),
                 entity.getToken(),
                 entity.getLastTradedPrice(),
@@ -25,7 +25,7 @@ public class MapperService {
 
     public OptionSnapshotDto toDto(OptionSnapshotEntity entity) {
         return new OptionSnapshotDto(
-                entity.getInstrument(),
+                entity.getStockName(),
                 entity.getSymbol(),
                 entity.getToken(),
                 entity.getStrike(),
@@ -43,7 +43,7 @@ public class MapperService {
 
     public TradingSignalDto toDto(TradingSignalEntity entity) {
         return new TradingSignalDto(
-                entity.getInstrument(),
+                entity.getStockName(),
                 entity.getDirection(),
                 entity.getConfidence(),
                 entity.getReason(),

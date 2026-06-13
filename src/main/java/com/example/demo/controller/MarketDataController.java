@@ -1,6 +1,5 @@
 package com.example.demo.controller;
 
-import com.example.demo.domain.InstrumentType;
 import com.example.demo.dto.IndicatorSummaryDto;
 import com.example.demo.dto.MarketDirectionResponse;
 import com.example.demo.dto.OptionChainResponse;
@@ -15,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -63,61 +63,67 @@ public class MarketDataController {
     }
 
     /*
-     * Fetches fresh option-chain data from Angel One SmartAPI for NIFTY or BANKNIFTY.
+     * Fetches fresh option-chain data from Angel One SmartAPI for any stock/index symbol.
+     * For NIFTY and BANKNIFTY, expiry can come from application.yml.
+     * For other symbols, pass expiry in the URL, for example:
+     * POST /api/market/RELIANCE/option-chain/refresh?expiry=27JUN2026
      * The data is saved into H2 and also cached for quick reads.
      */
-    @PostMapping("/{instrument}/option-chain/refresh")
-    public OptionChainResponse refreshOptionChain(@PathVariable InstrumentType instrument) {
-        return optionChainService.fetchAndStore(instrument);
+    @PostMapping("/{stockName}/option-chain/refresh")
+    public OptionChainResponse refreshOptionChain(
+            @PathVariable String stockName,
+            @RequestParam(required = false) String expiry
+    ) {
+        return optionChainService.fetchAndStore(stockName, expiry);
     }
 
     /*
-     * Returns the latest option-chain snapshot for the requested instrument.
+     * Returns the latest option-chain snapshot for the requested stock name.
      * It reads from Redis/in-memory cache first and falls back to recent H2 records.
      */
-    @GetMapping("/{instrument}/option-chain")
-    public OptionChainResponse optionChain(@PathVariable InstrumentType instrument) {
-        return optionChainService.latest(instrument);
+    @GetMapping("/{stockName}/option-chain")
+    public OptionChainResponse optionChain(@PathVariable String stockName) {
+        return optionChainService.latest(stockName);
     }
 
     /*
      * Calculates indicator values from the latest option-chain snapshots.
      * Includes PCR, OI change, VWAP, volume spike, and CE/PE price movement.
      */
-    @GetMapping("/{instrument}/indicators")
-    public IndicatorSummaryDto indicators(@PathVariable InstrumentType instrument) {
-        return indicatorService.summarize(instrument);
+    @GetMapping("/{stockName}/indicators")
+    public IndicatorSummaryDto indicators(@PathVariable String stockName) {
+        return indicatorService.summarize(stockName);
     }
 
     /*
-     * Returns the latest market direction for the requested instrument.
+     * Returns the latest market direction for the requested stock name.
      * Direction can be BULLISH, BEARISH, SIDEWAYS, or NO_TRADE.
      */
-    @GetMapping("/{instrument}/direction")
-    public MarketDirectionResponse direction(@PathVariable InstrumentType instrument) {
-        return signalService.direction(instrument);
+    @GetMapping("/{stockName}/direction")
+    public MarketDirectionResponse direction(@PathVariable String stockName) {
+        return signalService.direction(stockName);
     }
 
     /*
-     * Runs the rule-based signal engine immediately for one instrument.
+     * Runs the rule-based signal engine immediately for one stock name.
      * The generated signal is saved in H2 with confidence and reason.
      */
-    @PostMapping("/{instrument}/signals/process")
-    public TradingSignalDto processSignal(@PathVariable InstrumentType instrument) {
-        return signalService.process(instrument);
+    @PostMapping("/{stockName}/signals/process")
+    public TradingSignalDto processSignal(@PathVariable String stockName) {
+        return signalService.process(stockName);
     }
 
     /*
-     * Returns the most recent saved trading signal for one instrument.
+     * Returns the most recent saved trading signal for one stock name.
      * If no signal exists yet, the service generates one and returns it.
      */
-    @GetMapping("/{instrument}/signals/latest")
-    public TradingSignalDto latestSignal(@PathVariable InstrumentType instrument) {
-        return signalService.latestSignal(instrument);
+    @GetMapping("/{stockName}/signals/latest")
+    public TradingSignalDto latestSignal(@PathVariable String stockName) {
+        return signalService.latestSignal(stockName);
     }
 
     /*
-     * Runs signal processing for all configured instruments.
+     * Runs signal processing for default configured stock names.
      * Currently this processes both NIFTY and BANKNIFTY.
      */
     @PostMapping("/signals/process")

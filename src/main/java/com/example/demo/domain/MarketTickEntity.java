@@ -2,8 +2,6 @@ package com.example.demo.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -15,7 +13,7 @@ import java.time.Instant;
 @Entity
 @Table(name = "market_ticks", indexes = {
         @Index(name = "idx_market_ticks_symbol_time", columnList = "symbol,tick_time"),
-        @Index(name = "idx_market_ticks_instrument_time", columnList = "instrument,tick_time")
+        @Index(name = "idx_market_ticks_stock_name_time", columnList = "stock_name,tick_time")
 })
 public class MarketTickEntity {
 
@@ -23,9 +21,8 @@ public class MarketTickEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 16)
-    private InstrumentType instrument;
+    @Column(name = "stock_name", nullable = false, length = 64)
+    private String stockName;
 
     @Column(nullable = false)
     private String symbol;
@@ -53,12 +50,12 @@ public class MarketTickEntity {
         this.id = id;
     }
 
-    public InstrumentType getInstrument() {
-        return instrument;
+    public String getStockName() {
+        return stockName;
     }
 
-    public void setInstrument(InstrumentType instrument) {
-        this.instrument = instrument;
+    public void setStockName(String stockName) {
+        this.stockName = stockName;
     }
 
     public String getSymbol() {

@@ -1,7 +1,6 @@
 package com.example.demo.service;
 
 import com.example.demo.config.TradingProperties;
-import com.example.demo.domain.InstrumentType;
 import com.example.demo.domain.OptionSnapshotEntity;
 import com.example.demo.domain.OptionType;
 import com.example.demo.dto.IndicatorSummaryDto;
@@ -25,9 +24,9 @@ public class IndicatorService {
     }
 
     @Transactional(readOnly = true)
-    public IndicatorSummaryDto summarize(InstrumentType instrument) {
+    public IndicatorSummaryDto summarize(String stockName) {
         List<OptionSnapshotEntity> snapshots = optionSnapshotRepository
-                .findByInstrumentAndSnapshotTimeAfterOrderByStrikeAscOptionTypeAsc(instrument, Instant.now().minusSeconds(300));
+                .findByStockNameAndSnapshotTimeAfterOrderByStrikeAscOptionTypeAsc(normalize(stockName), Instant.now().minusSeconds(300));
 
         long callOi = sumOi(snapshots, OptionType.CE);
         long putOi = sumOi(snapshots, OptionType.PE);
@@ -51,6 +50,10 @@ public class IndicatorService {
                 putPriceMovement,
                 volumeSpike
         );
+    }
+
+    private String normalize(String value) {
+        return value == null ? null : value.trim().toUpperCase();
     }
 
     private long sumOi(List<OptionSnapshotEntity> snapshots, OptionType type) {

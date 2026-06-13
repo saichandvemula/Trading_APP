@@ -1,12 +1,11 @@
 package com.example.demo.dto;
 
-import com.example.demo.domain.InstrumentType;
 import com.example.demo.domain.SignalDirection;
 import java.math.BigDecimal;
 import java.time.Instant;
 
 public record TradingSignalDto(
-        InstrumentType instrument,
+        String stockName,
         SignalDirection direction,
         int confidence,
         String reason,

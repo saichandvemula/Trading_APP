@@ -15,7 +15,7 @@ import java.time.LocalDate;
 
 @Entity
 @Table(name = "option_snapshots", indexes = {
-        @Index(name = "idx_option_snapshots_instrument_time", columnList = "instrument,snapshot_time"),
+        @Index(name = "idx_option_snapshots_stock_name_time", columnList = "stock_name,snapshot_time"),
         @Index(name = "idx_option_snapshots_symbol_time", columnList = "symbol,snapshot_time")
 })
 public class OptionSnapshotEntity {
@@ -24,9 +24,8 @@ public class OptionSnapshotEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 16)
-    private InstrumentType instrument;
+    @Column(name = "stock_name", nullable = false, length = 64)
+    private String stockName;
 
     @Column(nullable = false)
     private String symbol;
@@ -73,12 +72,12 @@ public class OptionSnapshotEntity {
         this.id = id;
     }
 
-    public InstrumentType getInstrument() {
-        return instrument;
+    public String getStockName() {
+        return stockName;
     }
 
-    public void setInstrument(InstrumentType instrument) {
-        this.instrument = instrument;
+    public void setStockName(String stockName) {
+        this.stockName = stockName;
     }
 
     public String getSymbol() {

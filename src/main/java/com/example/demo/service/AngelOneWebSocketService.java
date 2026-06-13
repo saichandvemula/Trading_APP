@@ -2,7 +2,6 @@ package com.example.demo.service;
 
 import com.example.demo.config.AngelOneProperties;
 import com.example.demo.domain.AuthSessionEntity;
-import com.example.demo.domain.InstrumentType;
 import com.example.demo.exception.AuthenticationRequiredException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -125,11 +124,10 @@ public class AngelOneWebSocketService {
             if (token == null || ltp == null) {
                 return;
             }
-            InstrumentType instrument = "99926009".equals(token) ? InstrumentType.BANKNIFTY : InstrumentType.NIFTY;
-            String symbol = instrument.name();
+            String symbol = "99926009".equals(token) ? "BANKNIFTY" : "NIFTY";
             Long volume = longValue(node, "volume", "lastTradedQty");
             Long oi = longValue(node, "openInterest", "oi");
-            marketDataService.saveTick(instrument, symbol, token, ltp, volume, oi, Instant.now());
+            marketDataService.saveTick(symbol, token, ltp, volume, oi, Instant.now());
         }
 
         @Override
@@ -145,8 +143,8 @@ public class AngelOneWebSocketService {
             String token = new String(tokenBytes, StandardCharsets.UTF_8).replace("\u0000", "").trim();
             buffer.position(43);
             BigDecimal ltp = BigDecimal.valueOf(buffer.getLong()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-            InstrumentType instrument = "99926009".equals(token) ? InstrumentType.BANKNIFTY : InstrumentType.NIFTY;
-            marketDataService.saveTick(instrument, instrument.name(), token, ltp, null, null, Instant.now());
+            String symbol = "99926009".equals(token) ? "BANKNIFTY" : "NIFTY";
+            marketDataService.saveTick(symbol, token, ltp, null, null, Instant.now());
         }
 
         @Override

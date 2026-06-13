@@ -1,7 +1,6 @@
 package com.example.demo.service;
 
 import com.example.demo.config.TradingProperties;
-import com.example.demo.domain.InstrumentType;
 import com.example.demo.domain.SignalDirection;
 import com.example.demo.domain.TradingSignalEntity;
 import com.example.demo.dto.IndicatorSummaryDto;
@@ -20,7 +19,7 @@ public class PredictionEngine {
         this.properties = properties;
     }
 
-    public TradingSignalEntity predict(InstrumentType instrument, IndicatorSummaryDto indicators) {
+    public TradingSignalEntity predict(String stockName, IndicatorSummaryDto indicators) {
         int score = 0;
         List<String> reasons = new ArrayList<>();
 
@@ -66,7 +65,7 @@ public class PredictionEngine {
         }
 
         TradingSignalEntity entity = new TradingSignalEntity();
-        entity.setInstrument(instrument);
+        entity.setStockName(stockName);
         entity.setDirection(direction);
         entity.setConfidence(absoluteScore);
         entity.setReason(reasons.isEmpty() ? "Insufficient fresh option-chain evidence" : String.join("; ", reasons));

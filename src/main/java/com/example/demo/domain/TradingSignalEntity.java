@@ -13,16 +13,15 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
-@Table(name = "trading_signals", indexes = @Index(name = "idx_trading_signals_instrument_time", columnList = "instrument,generated_at"))
+@Table(name = "trading_signals", indexes = @Index(name = "idx_trading_signals_stock_name_time", columnList = "stock_name,generated_at"))
 public class TradingSignalEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 16)
-    private InstrumentType instrument;
+    @Column(name = "stock_name", nullable = false, length = 64)
+    private String stockName;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
@@ -57,12 +56,12 @@ public class TradingSignalEntity {
         this.id = id;
     }
 
-    public InstrumentType getInstrument() {
-        return instrument;
+    public String getStockName() {
+        return stockName;
     }
 
-    public void setInstrument(InstrumentType instrument) {
-        this.instrument = instrument;
+    public void setStockName(String stockName) {
+        this.stockName = stockName;
     }
 
     public SignalDirection getDirection() {
