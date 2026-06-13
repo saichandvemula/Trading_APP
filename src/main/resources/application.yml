@@ -1,0 +1,66 @@
+spring:
+  application:
+    name: market-strategy
+  datasource:
+    url: ${H2_DB_URL:jdbc:h2:file:./data/market_strategy;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH}
+    username: ${H2_DB_USERNAME:sa}
+    password: ${H2_DB_PASSWORD:}
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: ${H2_CONSOLE_ENABLED:true}
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          time_zone: UTC
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
+      repositories:
+        enabled: false
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  health:
+    redis:
+      enabled: ${REDIS_HEALTH_ENABLED:false}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+angel-one:
+  api-key: ${ANGEL_ONE_API_KEY:}
+  client-code: ${ANGEL_ONE_CLIENT_CODE:}
+  password: ${ANGEL_ONE_PASSWORD:}
+  totp-secret: ${ANGEL_ONE_TOTP_SECRET:}
+  rest-base-url: ${ANGEL_ONE_REST_BASE_URL:https://apiconnect.angelone.in}
+  websocket-url: ${ANGEL_ONE_WEBSOCKET_URL:wss://smartapisocket.angelone.in/smart-stream}
+  option-chain:
+    nifty-expiry: ${NIFTY_EXPIRY:}
+    banknifty-expiry: ${BANKNIFTY_EXPIRY:}
+    strike-window: ${OPTION_STRIKE_WINDOW:10}
+  websocket:
+    enabled: ${ANGEL_ONE_WEBSOCKET_ENABLED:true}
+    correlation-id: ${ANGEL_ONE_WS_CORRELATION_ID:market-strategy}
+    exchange-type: ${ANGEL_ONE_WS_EXCHANGE_TYPE:1}
+    tokens: ${ANGEL_ONE_WS_TOKENS:99926000,99926009}
+
+trading:
+  signal:
+    min-confidence: ${SIGNAL_MIN_CONFIDENCE:55}
+    volume-spike-multiplier: ${VOLUME_SPIKE_MULTIPLIER:1.8}
+    sideways-score-threshold: ${SIDEWAYS_SCORE_THRESHOLD:20}
