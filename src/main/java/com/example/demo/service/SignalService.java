@@ -17,17 +17,20 @@ public class SignalService {
     private final PredictionEngine predictionEngine;
     private final TradingSignalRepository tradingSignalRepository;
     private final MapperService mapperService;
+    private final OptionChainService optionChainService;
 
     public SignalService(
             IndicatorService indicatorService,
             PredictionEngine predictionEngine,
             TradingSignalRepository tradingSignalRepository,
-            MapperService mapperService
+            MapperService mapperService,
+            OptionChainService optionChainService
     ) {
         this.indicatorService = indicatorService;
         this.predictionEngine = predictionEngine;
         this.tradingSignalRepository = tradingSignalRepository;
         this.mapperService = mapperService;
+        this.optionChainService = optionChainService;
     }
 
     @Transactional
@@ -35,6 +38,13 @@ public class SignalService {
         String normalizedStockName = normalize(stockName);
         TradingSignalEntity signal = predictionEngine.predict(normalizedStockName, indicatorService.summarize(normalizedStockName));
         return mapperService.toDto(tradingSignalRepository.save(signal));
+    }
+
+    @Transactional
+    public TradingSignalDto refreshOptionChainAndProcess(String stockName, String expiry) {
+        String normalizedStockName = normalize(stockName);
+        optionChainService.fetchAndStore(normalizedStockName, expiry);
+        return process(normalizedStockName);
     }
 
     @Transactional

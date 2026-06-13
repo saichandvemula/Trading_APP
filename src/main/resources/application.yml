@@ -10,7 +10,12 @@ spring:
     console:
       enabled: ${H2_CONSOLE_ENABLED:true}
       path: /h2-console
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
   jpa:
+    defer-datasource-initialization: false
     hibernate:
       ddl-auto: update
     open-in-view: false

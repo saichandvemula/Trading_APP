@@ -114,6 +114,22 @@ public class MarketDataController {
     }
 
     /*
+     * One-step signal API.
+     * This first fetches the latest option-chain data from Angel One for the stock name,
+     * stores the option snapshots, calculates indicators, and returns the final signal.
+     *
+     * Example:
+     * POST /api/market/RELIANCE/signal?expiry=27JUN2026
+     */
+    @PostMapping("/{stockName}/signal")
+    public TradingSignalDto refreshOptionChainAndGetSignal(
+            @PathVariable String stockName,
+            @RequestParam(required = false) String expiry
+    ) {
+        return signalService.refreshOptionChainAndProcess(stockName, expiry);
+    }
+
+    /*
      * Returns the most recent saved trading signal for one stock name.
      * If no signal exists yet, the service generates one and returns it.
      */
