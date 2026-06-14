@@ -38,15 +38,33 @@ public class SmartApiClient {
         return post("/rest/secure/angelbroking/marketData/v1/optionGreek", body, jwtToken);
     }
 
+    public JsonNode candleData(
+            String jwtToken,
+            String exchange,
+            String symbolToken,
+            String interval,
+            String fromDate,
+            String toDate
+    ) {
+        Map<String, String> body = new HashMap<>();
+        body.put("exchange", exchange);
+        body.put("symboltoken", symbolToken);
+        body.put("interval", interval);
+        body.put("fromdate", fromDate);
+        body.put("todate", toDate);
+        return post("/rest/secure/angelbroking/historical/v1/getCandleData", body, jwtToken);
+    }
+
     private JsonNode post(String path, Object body, String jwtToken) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(java.util.List.of(MediaType.APPLICATION_JSON));
+        headers.set(HttpHeaders.USER_AGENT, "Mozilla/5.0");
         headers.set("X-UserType", "USER");
         headers.set("X-SourceID", "WEB");
-        headers.set("X-ClientLocalIP", "127.0.0.1");
-        headers.set("X-ClientPublicIP", "127.0.0.1");
-        headers.set("X-MACAddress", "00:00:00:00:00:00");
+        headers.set("X-ClientLocalIP", properties.clientLocalIp());
+        headers.set("X-ClientPublicIP", properties.clientPublicIp());
+        headers.set("X-MACAddress", properties.macAddress());
         headers.set("X-PrivateKey", properties.apiKey());
         if (jwtToken != null && !jwtToken.isBlank()) {
             headers.setBearerAuth(jwtToken.replace("Bearer ", ""));

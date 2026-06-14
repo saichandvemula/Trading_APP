@@ -48,11 +48,14 @@ management:
         include: health,info,metrics
 
 angel-one:
-  api-key: ${ANGEL_ONE_API_KEY:}
-  client-code: ${ANGEL_ONE_CLIENT_CODE:}
-  password: ${ANGEL_ONE_PASSWORD:}
-  totp-secret: ${ANGEL_ONE_TOTP_SECRET:}
-  rest-base-url: ${ANGEL_ONE_REST_BASE_URL:https://apiconnect.angelone.in}
+  api-key: ${ANGEL_ONE_API_KEY:o16Hv0LA}
+  client-code: ${ANGEL_ONE_CLIENT_CODE:AACI738315}
+  password: ${ANGEL_ONE_PASSWORD:9640}
+  totp-secret: ${ANGEL_ONE_TOTP_SECRET:7UHXFNL7U2UNYEBX5LHCRWZ4PA}
+  client-local-ip: ${ANGEL_ONE_CLIENT_LOCAL_IP:127.0.0.1}
+  client-public-ip: ${ANGEL_ONE_CLIENT_PUBLIC_IP:49.206.128.79}
+  mac-address: ${ANGEL_ONE_MAC_ADDRESS:00:00:00:00:00:00}
+  rest-base-url: ${ANGEL_ONE_REST_BASE_URL:https://apiconnect.angelbroking.com}
   websocket-url: ${ANGEL_ONE_WEBSOCKET_URL:wss://smartapisocket.angelone.in/smart-stream}
   option-chain:
     nifty-expiry: ${NIFTY_EXPIRY:}
@@ -65,6 +68,59 @@ angel-one:
     tokens: ${ANGEL_ONE_WS_TOKENS:99926000,99926009}
 
 trading:
+  universe:
+    nifty50:
+      - { symbol: ADANIENT, exchange: NSE, token: "25" }
+      - { symbol: ADANIPORTS, exchange: NSE, token: "15083" }
+      - { symbol: APOLLOHOSP, exchange: NSE, token: "157" }
+      - { symbol: ASIANPAINT, exchange: NSE, token: "236" }
+      - { symbol: AXISBANK, exchange: NSE, token: "5900" }
+      - { symbol: BAJAJ-AUTO, exchange: NSE, token: "16669" }
+      - { symbol: BAJFINANCE, exchange: NSE, token: "317" }
+      - { symbol: BAJAJFINSV, exchange: NSE, token: "16675" }
+      - { symbol: BEL, exchange: NSE, token: "383" }
+      - { symbol: BHARTIARTL, exchange: NSE, token: "10604" }
+      - { symbol: BPCL, exchange: NSE, token: "526" }
+      - { symbol: BRITANNIA, exchange: NSE, token: "547" }
+      - { symbol: CIPLA, exchange: NSE, token: "694" }
+      - { symbol: COALINDIA, exchange: NSE, token: "20374" }
+      - { symbol: DRREDDY, exchange: NSE, token: "881" }
+      - { symbol: EICHERMOT, exchange: NSE, token: "910" }
+      - { symbol: GRASIM, exchange: NSE, token: "1232" }
+      - { symbol: HCLTECH, exchange: NSE, token: "7229" }
+      - { symbol: HDFCBANK, exchange: NSE, token: "1333" }
+      - { symbol: HDFCLIFE, exchange: NSE, token: "467" }
+      - { symbol: HEROMOTOCO, exchange: NSE, token: "1348" }
+      - { symbol: HINDALCO, exchange: NSE, token: "1363" }
+      - { symbol: HINDUNILVR, exchange: NSE, token: "1394" }
+      - { symbol: ICICIBANK, exchange: NSE, token: "4963" }
+      - { symbol: INDUSINDBK, exchange: NSE, token: "5258" }
+      - { symbol: INFY, exchange: NSE, token: "1594" }
+      - { symbol: ITC, exchange: NSE, token: "1660" }
+      - { symbol: JIOFIN, exchange: NSE, token: "18143" }
+      - { symbol: JSWSTEEL, exchange: NSE, token: "11723" }
+      - { symbol: KOTAKBANK, exchange: NSE, token: "1922" }
+      - { symbol: LT, exchange: NSE, token: "11483" }
+      - { symbol: "M&M", exchange: NSE, token: "2031" }
+      - { symbol: MARUTI, exchange: NSE, token: "10999" }
+      - { symbol: NESTLEIND, exchange: NSE, token: "17963" }
+      - { symbol: NTPC, exchange: NSE, token: "11630" }
+      - { symbol: ONGC, exchange: NSE, token: "2475" }
+      - { symbol: POWERGRID, exchange: NSE, token: "14977" }
+      - { symbol: RELIANCE, exchange: NSE, token: "2885" }
+      - { symbol: SBILIFE, exchange: NSE, token: "21808" }
+      - { symbol: SBIN, exchange: NSE, token: "3045" }
+      - { symbol: SHRIRAMFIN, exchange: NSE, token: "4306" }
+      - { symbol: SUNPHARMA, exchange: NSE, token: "3351" }
+      - { symbol: TATACONSUM, exchange: NSE, token: "3432" }
+      - { symbol: TATAMOTORS, exchange: NSE, token: "3456" }
+      - { symbol: TATASTEEL, exchange: NSE, token: "3499" }
+      - { symbol: TCS, exchange: NSE, token: "11536" }
+      - { symbol: TECHM, exchange: NSE, token: "13538" }
+      - { symbol: TITAN, exchange: NSE, token: "3506" }
+      - { symbol: TRENT, exchange: NSE, token: "1964" }
+      - { symbol: ULTRACEMCO, exchange: NSE, token: "11532" }
+      - { symbol: WIPRO, exchange: NSE, token: "3787" }
   signal:
     min-confidence: ${SIGNAL_MIN_CONFIDENCE:55}
     volume-spike-multiplier: ${VOLUME_SPIKE_MULTIPLIER:1.8}
