@@ -32,9 +32,11 @@ public class IndicatorService {
         long putOi = sumOi(snapshots, OptionType.PE);
         long callOiChange = sumOiChange(snapshots, OptionType.CE);
         long putOiChange = sumOiChange(snapshots, OptionType.PE);
-        BigDecimal pcr = callOi == 0
+        long callPcrBase = callOi > 0 ? callOi : sumVolume(snapshots, OptionType.CE);
+        long putPcrBase = putOi > 0 ? putOi : sumVolume(snapshots, OptionType.PE);
+        BigDecimal pcr = callPcrBase == 0
                 ? BigDecimal.ZERO
-                : BigDecimal.valueOf(putOi).divide(BigDecimal.valueOf(callOi), 4, RoundingMode.HALF_UP);
+                : BigDecimal.valueOf(putPcrBase).divide(BigDecimal.valueOf(callPcrBase), 4, RoundingMode.HALF_UP);
         BigDecimal averageVwap = averageVwap(snapshots);
         BigDecimal callPriceMovement = averagePriceChange(snapshots, OptionType.CE);
         BigDecimal putPriceMovement = averagePriceChange(snapshots, OptionType.PE);
@@ -69,6 +71,15 @@ public class IndicatorService {
         return snapshots.stream()
                 .filter(snapshot -> snapshot.getOptionType() == type)
                 .map(OptionSnapshotEntity::getOiChange)
+                .filter(value -> value != null)
+                .mapToLong(Long::longValue)
+                .sum();
+    }
+
+    private long sumVolume(List<OptionSnapshotEntity> snapshots, OptionType type) {
+        return snapshots.stream()
+                .filter(snapshot -> snapshot.getOptionType() == type)
+                .map(OptionSnapshotEntity::getVolume)
                 .filter(value -> value != null)
                 .mapToLong(Long::longValue)
                 .sum();

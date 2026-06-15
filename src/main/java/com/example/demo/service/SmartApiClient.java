@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.config.AngelOneProperties;
 import com.example.demo.exception.SmartApiException;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.http.HttpEntity;
@@ -36,6 +37,13 @@ public class SmartApiClient {
         body.put("name", name);
         body.put("expirydate", expiryDate);
         return post("/rest/secure/angelbroking/marketData/v1/optionGreek", body, jwtToken);
+    }
+
+    public JsonNode fullMarketQuote(String jwtToken, String exchange, List<String> tokens) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("mode", "FULL");
+        body.put("exchangeTokens", Map.of(exchange, tokens));
+        return post("/rest/secure/angelbroking/market/v1/quote/", body, jwtToken);
     }
 
     public JsonNode candleData(

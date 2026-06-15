@@ -26,10 +26,10 @@ public class PredictionEngine {
         int pcrCompare = indicators.pcr().compareTo(BigDecimal.ONE);
         if (pcrCompare > 0) {
             score += 25;
-            reasons.add("PCR above 1.0 shows stronger put OI support");
+            reasons.add("PCR above 1.0 shows stronger put-side participation");
         } else if (pcrCompare < 0) {
             score -= 25;
-            reasons.add("PCR below 1.0 shows stronger call OI resistance");
+            reasons.add("PCR below 1.0 shows stronger call-side participation");
         }
 
         long oiChangeDelta = indicators.totalPutOiChange() - indicators.totalCallOiChange();

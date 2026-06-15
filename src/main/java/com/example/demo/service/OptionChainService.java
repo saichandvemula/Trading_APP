@@ -13,17 +13,27 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class OptionChainService {
 
-    private static final DateTimeFormatter SMART_API_EXPIRY = DateTimeFormatter.ofPattern("ddMMMyyyy", Locale.ENGLISH);
+    private static final Logger log = LoggerFactory.getLogger(OptionChainService.class);
+    private static final DateTimeFormatter SMART_API_EXPIRY = new DateTimeFormatterBuilder()
+            .parseCaseInsensitive()
+            .appendPattern("ddMMMyyyy")
+            .toFormatter(Locale.ENGLISH);
+    private static final int QUOTE_BATCH_SIZE = 50;
 
     private final AngelOneProperties properties;
     private final SmartApiClient smartApiClient;
@@ -31,6 +41,7 @@ public class OptionChainService {
     private final OptionSnapshotRepository optionSnapshotRepository;
     private final CacheService cacheService;
     private final MapperService mapperService;
+    private final ScripMasterService scripMasterService;
 
     public OptionChainService(
             AngelOneProperties properties,
@@ -38,7 +49,8 @@ public class OptionChainService {
             AuthService authService,
             OptionSnapshotRepository optionSnapshotRepository,
             CacheService cacheService,
-            MapperService mapperService
+            MapperService mapperService,
+            ScripMasterService scripMasterService
     ) {
         this.properties = properties;
         this.smartApiClient = smartApiClient;
@@ -46,6 +58,7 @@ public class OptionChainService {
         this.optionSnapshotRepository = optionSnapshotRepository;
         this.cacheService = cacheService;
         this.mapperService = mapperService;
+        this.scripMasterService = scripMasterService;
     }
 
     @Transactional
@@ -61,12 +74,28 @@ public class OptionChainService {
 
         Instant now = Instant.now();
         LocalDate expiryDate = parseExpiry(expiry);
-        List<OptionSnapshotDto> snapshots = new ArrayList<>();
+        List<OptionSnapshotEntity> entities = new ArrayList<>();
+        boolean tokenResolutionAvailable = true;
         for (JsonNode item : data) {
             OptionSnapshotEntity entity = toEntity(normalizedStockName, item, expiryDate, now);
             if (entity != null) {
-                snapshots.add(mapperService.toDto(optionSnapshotRepository.save(entity)));
+                if (tokenResolutionAvailable) {
+                    try {
+                        applyContractToken(entity);
+                    } catch (RuntimeException ex) {
+                        tokenResolutionAvailable = false;
+                        log.warn("NFO option token resolution failed; using Option Greeks data only: {}", ex.getMessage());
+                    }
+                }
+                entities.add(entity);
             }
+        }
+
+        enrichWithFullQuotes(session.getJwtToken(), entities);
+
+        List<OptionSnapshotDto> snapshots = new ArrayList<>();
+        for (OptionSnapshotEntity entity : entities) {
+            snapshots.add(mapperService.toDto(optionSnapshotRepository.save(entity)));
         }
         cacheService.cacheOptionChain(normalizedStockName, snapshots);
         return new OptionChainResponse(normalizedStockName, now, snapshots);
@@ -116,6 +145,89 @@ public class OptionChainService {
             entity.setToken(entity.getSymbol());
         }
         return entity;
+    }
+
+    private void applyContractToken(OptionSnapshotEntity entity) {
+        scripMasterService.findOptionContract(
+                        entity.getStockName(),
+                        entity.getExpiry(),
+                        entity.getStrike(),
+                        entity.getOptionType()
+                )
+                .ifPresent(contract -> {
+                    entity.setSymbol(contract.symbol());
+                    entity.setToken(contract.token());
+                });
+    }
+
+    private void enrichWithFullQuotes(String jwtToken, List<OptionSnapshotEntity> entities) {
+        List<String> tokens = entities.stream()
+                .map(OptionSnapshotEntity::getToken)
+                .filter(token -> token != null && token.matches("\\d+"))
+                .distinct()
+                .toList();
+        if (tokens.isEmpty()) {
+            log.warn("No NFO option tokens resolved; using Option Greeks data only");
+            return;
+        }
+
+        Map<String, JsonNode> quoteByToken = new HashMap<>();
+        for (int index = 0; index < tokens.size(); index += QUOTE_BATCH_SIZE) {
+            List<String> batch = tokens.subList(index, Math.min(index + QUOTE_BATCH_SIZE, tokens.size()));
+            try {
+                JsonNode response = smartApiClient.fullMarketQuote(jwtToken, "NFO", batch);
+                JsonNode fetched = response.path("data").path("fetched");
+                if (fetched.isArray()) {
+                    for (JsonNode quote : fetched) {
+                        String token = text(quote, "symbolToken", "symboltoken", "token");
+                        if (token != null) {
+                            quoteByToken.put(token, quote);
+                        }
+                    }
+                }
+            } catch (RuntimeException ex) {
+                log.warn("Angel One FULL quote batch failed: {}", ex.getMessage());
+            }
+        }
+
+        for (OptionSnapshotEntity entity : entities) {
+            JsonNode quote = quoteByToken.get(entity.getToken());
+            if (quote != null) {
+                applyQuote(entity, quote);
+            }
+        }
+    }
+
+    private void applyQuote(OptionSnapshotEntity entity, JsonNode quote) {
+        BigDecimal lastTradedPrice = decimal(quote, "ltp", "lastTradedPrice", "last_traded_price");
+        Long volume = longValue(quote, "tradeVolume", "volume", "totalTradedVolume");
+        Long openInterest = longValue(quote, "opnInterest", "openInterest", "oi");
+        Long oiChange = longValue(quote, "netChangeOpnInterest", "changeinOpenInterest", "oiChange", "changeInOI");
+        BigDecimal vwap = decimal(quote, "avgPrice", "averagePrice", "vwap");
+        BigDecimal priceChange = decimal(quote, "netChange", "priceChange", "change");
+        String symbol = text(quote, "tradingSymbol", "tradingsymbol", "symbol");
+
+        if (lastTradedPrice != null) {
+            entity.setLastTradedPrice(lastTradedPrice);
+        }
+        if (volume != null) {
+            entity.setVolume(volume);
+        }
+        if (openInterest != null) {
+            entity.setOpenInterest(openInterest);
+        }
+        if (oiChange != null) {
+            entity.setOiChange(oiChange);
+        }
+        if (vwap != null) {
+            entity.setVwap(vwap);
+        }
+        if (priceChange != null) {
+            entity.setPriceChange(priceChange);
+        }
+        if (symbol != null) {
+            entity.setSymbol(symbol);
+        }
     }
 
     private String resolveExpiry(String stockName, String requestedExpiry) {
